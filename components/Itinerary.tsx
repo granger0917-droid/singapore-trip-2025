@@ -148,7 +148,7 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
       </div>
 
       {/* Timeline Content */}
-      <div className="flex-1 overflow-y-auto px-5 pb-32 pt-6 scroll-smooth">
+      <div className="flex-1 overflow-y-auto px-5 pb-40 pt-6 scroll-smooth">
         <div className="relative pl-4 space-y-8">
           {/* Vertical Line */}
           <div className="absolute left-[19px] top-4 bottom-4 w-[2px] bg-slate-200 rounded-full"></div>
