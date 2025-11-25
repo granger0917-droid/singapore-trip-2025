@@ -111,7 +111,7 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8 pb-32">
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8 pb-40">
         
         {/* NEXT UP Card (Dynamic) */}
         {nextActivity && (
