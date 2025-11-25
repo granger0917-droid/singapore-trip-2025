@@ -53,6 +53,11 @@
         padding-bottom: env(safe-area-inset-bottom);
       }
 
+      /* Dynamic bottom spacing for floating nav */
+      .safe-bottom-nav {
+        bottom: max(1.5rem, env(safe-area-inset-bottom) + 0.5rem);
+      }
+
       @media print {
         @page {
           size: A4;
@@ -87,19 +92,18 @@
         }
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-background text-slate-800 antialiased h-screen w-screen overflow-hidden">
     <div id="root" class="h-full w-full"></div>
