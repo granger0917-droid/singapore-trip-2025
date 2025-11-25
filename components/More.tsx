@@ -169,7 +169,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
   };
 
   return (
-    <div className="px-4 pt-14 pb-24 space-y-4 overflow-y-auto h-full bg-slate-50">
+    <div className="px-4 pt-14 pb-40 space-y-4 overflow-y-auto h-full bg-slate-50">
       <h2 className="text-xl font-bold text-gray-800 mb-4">更多功能</h2>
 
       {/* Weather Widget */}
