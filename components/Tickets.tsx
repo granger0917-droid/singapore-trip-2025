@@ -258,7 +258,7 @@ const Tickets: React.FC<Props> = ({
       </div>
 
       {/* Ticket Cards Grid */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 grid grid-cols-2 gap-4 content-start">
+      <div className="flex-1 overflow-y-auto p-4 pb-40 grid grid-cols-2 gap-4 content-start">
         {filteredTickets.length === 0 && (
             <div className="col-span-2 flex flex-col items-center justify-center py-10 text-gray-400">
                 <FileText size={48} className="mb-2 opacity-20" />
