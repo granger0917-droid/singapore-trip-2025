@@ -17,7 +17,8 @@ const Layout = ({ activeTab, onTabChange, children }: Props) => {
       </main>
 
       {/* Floating Glass Bottom Navigation */}
-      <nav className="no-print absolute left-4 right-4 h-16 z-50 safe-bottom-nav">
+      {/* Changed from absolute to fixed to guarantee floating on all mobile viewports */}
+      <nav className="no-print fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[26rem] h-16 z-50 safe-bottom-nav">
         <div className="absolute inset-0 bg-white/90 backdrop-blur-xl border border-white/40 shadow-xl rounded-2xl"></div>
         <div className="relative flex justify-around items-center h-full px-2">
           <NavButton 
