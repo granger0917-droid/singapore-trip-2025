@@ -281,7 +281,11 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
                                 type="text" 
                                 placeholder="例：Ah Meng Restaurant"
                                 value={formData.location}
-                                onChange={e => setFormData({...formData, location: e.target.value})}
+                                onChange={e => setFormData({
+                                    ...formData, 
+                                    location: e.target.value, 
+                                    mapQuery: e.target.value // 同步更新地圖搜尋關鍵字
+                                })}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                             />
                           </div>
