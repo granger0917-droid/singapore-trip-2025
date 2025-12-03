@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AppData, TicketType, PrintMode, TicketCategory } from '../types';
 
@@ -41,7 +42,7 @@ const PrintView: React.FC<Props> = ({ data, mode }) => {
                     <span className="font-mono font-bold">{data.flights.outbound.code}</span>
                     <div className="ml-10 text-gray-600 mt-1">
                         {data.flights.outbound.date} {data.flights.outbound.time} <br/>
-                        {data.flights.outbound.airport} ({data.flights.outbound.terminal})
+                        {data.flights.outbound.origin} → {data.flights.outbound.destination} (Term {data.flights.outbound.terminal})
                     </div>
                 </div>
                 <div>
@@ -49,7 +50,7 @@ const PrintView: React.FC<Props> = ({ data, mode }) => {
                     <span className="font-mono font-bold">{data.flights.inbound.code}</span>
                     <div className="ml-10 text-gray-600 mt-1">
                         {data.flights.inbound.date} {data.flights.inbound.time} <br/>
-                        {data.flights.inbound.airport} ({data.flights.inbound.terminal})
+                        {data.flights.inbound.origin} → {data.flights.inbound.destination} (Term {data.flights.inbound.terminal})
                     </div>
                 </div>
             </div>
