@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+
+import React, { useRef, useState, useEffect } from 'react';
 import { AppData, PrintMode } from '../types';
-import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2 } from 'lucide-react';
+import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, Smartphone, ExternalLink } from 'lucide-react';
 
 interface Props {
   data: AppData;
@@ -24,18 +25,38 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
   
   // Weather States
   const [loadingWeather, setLoadingWeather] = useState(false);
-  const [isLiveForecast, setIsLiveForecast] = useState(false);
-  const [weatherData, setWeatherData] = useState<WeatherItem[]>([
-    { date: '11/27', day: '週四', temp: '25-31°C', condition: '雷陣雨', color: 'text-blue-600', icon: <CloudLightning size={24} /> },
-    { date: '11/28', day: '週五', temp: '26-31°C', condition: '多雲時雨', color: 'text-blue-500', icon: <CloudRain size={24} /> },
-    { date: '11/29', day: '週六', temp: '25-32°C', condition: '局部雷雨', color: 'text-yellow-600', icon: <CloudLightning size={24} /> },
-    { date: '11/30', day: '週日', temp: '26-31°C', condition: '多雲', color: 'text-gray-500', icon: <Cloud size={24} /> },
-    { date: '12/01', day: '週一', temp: '25-30°C', condition: '陣雨', color: 'text-blue-400', icon: <CloudRain size={24} /> },
-  ]);
+  
+  // Helper to generate dynamic placeholders based on TODAY
+  const getSevenDayPlaceholder = () => {
+      const items: WeatherItem[] = [];
+      const today = new Date();
+      const dayMap = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+      for (let i = 0; i < 7; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() + i);
+          items.push({
+              date: `${d.getMonth() + 1}/${d.getDate()}`,
+              day: i === 0 ? '今天' : dayMap[d.getDay()],
+              temp: '--',
+              condition: '載入中...',
+              color: 'text-gray-400',
+              icon: <Loader2 size={24} className="animate-spin opacity-50" />
+          });
+      }
+      return items;
+  };
+
+  const [weatherData, setWeatherData] = useState<WeatherItem[]>(getSevenDayPlaceholder());
+
+  // Fetch weather automatically on mount
+  useEffect(() => {
+      fetchWeather();
+  }, []);
 
   const handleReset = () => {
     const pwd = prompt("請輸入重置密碼：");
-    if (pwd === '0902') {
+    if (pwd === '0000') {
         if(confirm("確定要刪除所有票券並重置行程嗎？此動作無法復原。")) {
             onReset();
         }
@@ -105,8 +126,8 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
     });
   };
 
-  const openMap = () => {
-    window.open('https://www.mandai.com/content/dam/mandai/singapore-zoo/park-map/sz-zh-map.pdf', '_blank');
+  const openUrl = (url: string) => {
+    window.open(url, '_blank');
   };
 
   // Weather Logic
@@ -120,7 +141,8 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
         const jsonData = await response.json();
         
         if (jsonData.daily) {
-            const newForecast: WeatherItem[] = jsonData.daily.time.slice(0, 5).map((dateStr: string, index: number) => {
+            // Get next 7 days
+            const newForecast: WeatherItem[] = jsonData.daily.time.slice(0, 7).map((dateStr: string, index: number) => {
                 const dateObj = new Date(dateStr);
                 const month = dateObj.getMonth() + 1;
                 const date = dateObj.getDate();
@@ -148,9 +170,13 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                     color = 'text-blue-600';
                 }
 
+                // Check if it is today
+                const today = new Date();
+                const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth();
+
                 return {
                     date: `${month}/${date}`,
-                    day: dayMap[dateObj.getDay()],
+                    day: isToday ? '今天' : dayMap[dateObj.getDay()],
                     temp: `${min}-${max}°C`,
                     condition,
                     color,
@@ -158,15 +184,23 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                 };
             });
             setWeatherData(newForecast);
-            setIsLiveForecast(true);
         }
     } catch (error) {
         console.error("Weather fetch failed", error);
-        alert("天氣更新失敗，請檢查網路連線");
+        // Do not alert on auto-fetch to avoid annoying popups
+        // alert("天氣更新失敗，請檢查網路連線");
     } finally {
         setLoadingWeather(false);
     }
   };
+
+  const mandaiMaps = [
+      { name: '新加坡動物園', url: 'https://www.mandai.com/content/dam/mandai/singapore-zoo/park-map/sz-zh-map.pdf', color: 'bg-green-100 text-green-700' },
+      { name: '夜間野生動物園', url: 'https://www.mandai.com/content/dam/mandai/night-safari/park-map/ns-zh-map.pdf', color: 'bg-indigo-100 text-indigo-700' },
+      { name: '飛禽公園', url: 'https://www.mandai.com/content/dam/mandai/bird-paradise/park-map/bp-zh-map.pdf', color: 'bg-pink-100 text-pink-700' },
+      { name: '河川生態園', url: 'https://www.mandai.com/content/dam/mandai/river-wonders/park-map/rw-zh-map.pdf', color: 'bg-teal-100 text-teal-700' },
+      { name: '亞洲雨林探險園', url: 'https://www.mandai.com/content/dam/mandai/rainforest-wild-asia/park-map/rfw-asia-zh-map.pdf', color: 'bg-lime-100 text-lime-800' },
+  ];
 
   return (
     <div className="px-4 pt-14 pb-40 space-y-4 overflow-y-auto h-full bg-slate-50">
@@ -178,14 +212,13 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
             <div className="flex items-center">
                 <CloudRain className="text-blue-500 mr-2" />
                 <div>
-                    <h3 className="font-bold text-gray-700 leading-none">旅程天氣預報</h3>
+                    <h3 className="font-bold text-gray-700 leading-none">一週天氣預報 (新加坡)</h3>
                     <span className="text-[10px] text-gray-400">
-                        {isLiveForecast ? '即時更新 (未來 5 天)' : '歷史氣候預估 (旅程日期)'}
+                        {weatherData.length > 0 ? `更新時間: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : '載入中...'}
                     </span>
                 </div>
             </div>
             <div className="flex items-center space-x-2">
-                 <span className="text-[10px] text-gray-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">新加坡</span>
                  <button 
                     onClick={fetchWeather}
                     disabled={loadingWeather}
@@ -199,35 +232,47 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
             {weatherData.map((day, idx) => (
                 <div key={idx} className="flex-none w-[72px] flex flex-col items-center bg-slate-50 rounded-xl p-3 border border-slate-100 shadow-sm transition-all hover:bg-white hover:shadow-md">
                     <span className="text-xs font-bold text-gray-400">{day.date}</span>
-                    <span className="text-[10px] text-gray-400 mb-2">{day.day}</span>
+                    <span className={`text-[10px] mb-2 ${day.day === '今天' ? 'text-primary font-bold' : 'text-gray-400'}`}>{day.day}</span>
                     <div className={`mb-2 ${day.color}`}>{day.icon}</div>
                     <span className="text-xs font-black text-gray-700 whitespace-nowrap">{day.temp}</span>
                     <span className="text-[10px] text-gray-500 mt-1 scale-90 whitespace-nowrap">{day.condition}</span>
                 </div>
             ))}
         </div>
-        {!isLiveForecast && (
-            <p className="text-[10px] text-gray-300 p-2 text-right italic border-t border-slate-50 bg-slate-50/50">
-                點擊上方重新整理按鈕可查看目前即時天氣
-            </p>
-        )}
       </div>
 
-      {/* Map & Copy */}
-      <div className="space-y-2">
-        <button 
-            onClick={openMap}
-            className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center hover:bg-slate-50 active:scale-[0.98] transition-transform"
-        >
-            <div className="bg-green-100 p-2 rounded-lg text-green-600 mr-3">
-                <Map size={24} />
-            </div>
-            <div className="text-left">
-                <p className="font-bold text-gray-800">新加坡動物園地圖</p>
-                <p className="text-xs text-gray-500">開啟園區導覽圖</p>
-            </div>
-        </button>
+      {/* Mandai Maps & App Section */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <div className="flex items-center mb-3">
+             <Map className="text-green-600 mr-2" />
+             <h3 className="font-bold text-gray-700">萬態野生動物保護區</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 mb-3">
+            {mandaiMaps.map((map, idx) => (
+                <button 
+                    key={idx}
+                    onClick={() => openUrl(map.url)}
+                    className={`flex items-center p-3 rounded-xl transition-transform active:scale-95 text-left border border-transparent hover:border-black/5 ${map.color}`}
+                >
+                    <Map size={16} className="mr-2 shrink-0 opacity-70" />
+                    <span className="text-xs font-bold leading-tight">{map.name}</span>
+                </button>
+            ))}
+        </div>
 
+        <button 
+            onClick={() => openUrl('https://www.mandai.com/en/mandai-app.html')}
+            className="w-full bg-slate-800 text-white p-3 rounded-xl shadow-md shadow-slate-200 flex items-center justify-center hover:bg-slate-700 active:scale-[0.98] transition-all"
+        >
+            <Smartphone size={18} className="mr-2" />
+            <span className="font-bold text-sm">下載 Mandai App (官方)</span>
+            <ExternalLink size={14} className="ml-2 opacity-50" />
+        </button>
+      </div>
+
+      {/* Copy Text */}
+      <div className="space-y-2">
         <button 
             onClick={handleCopyText}
             className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center hover:bg-slate-50 active:scale-[0.98] transition-transform"
@@ -325,7 +370,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
           </div>
           <div className="text-left">
               <p className="font-bold text-red-800">重置所有資料</p>
-              <p className="text-xs text-red-600">密碼 0902 (慎用)</p>
+              <p className="text-xs text-red-600">密碼 0000 (慎用)</p>
           </div>
       </button>
 
