@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AppData, Activity, DayItinerary } from '../types';
 import { MapPin, ArrowUp, ArrowDown, Edit3, Trash2, Plus, X, Save, Settings, Calendar } from 'lucide-react';
@@ -275,7 +276,7 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
                     )}
 
                     {act.note && (
-                        <div className="bg-[#fcf8f2] text-[#86754d] text-xs px-3 py-2.5 rounded-xl mt-3 border border-[#e8dfd0] leading-relaxed font-medium">
+                        <div className="bg-[#fcf8f2] text-[#86754d] text-xs px-3 py-2.5 rounded-xl mt-3 border border-[#e8dfd0] leading-relaxed font-medium whitespace-pre-wrap">
                             💡 {act.note}
                         </div>
                     )}
