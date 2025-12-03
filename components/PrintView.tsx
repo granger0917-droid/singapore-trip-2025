@@ -93,7 +93,7 @@ const PrintView: React.FC<Props> = ({ data, mode }) => {
                                                 </div>
                                             )}
                                             {act.note && (
-                                                <div className="mt-1 text-xs bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-100 italic">
+                                                <div className="mt-1 text-xs bg-yellow-50 text-yellow-800 p-1.5 rounded border border-yellow-100 italic whitespace-pre-wrap">
                                                     {act.note}
                                                 </div>
                                             )}
