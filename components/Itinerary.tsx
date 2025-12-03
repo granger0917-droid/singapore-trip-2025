@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppData, Activity } from '../types';
-import { MapPin, ArrowUp, ArrowDown, Edit3, Trash2, Plus, X, Save } from 'lucide-react';
+import { AppData, Activity, DayItinerary } from '../types';
+import { MapPin, ArrowUp, ArrowDown, Edit3, Trash2, Plus, X, Save, Settings, Calendar } from 'lucide-react';
 
 interface Props {
   data: AppData;
@@ -17,7 +17,21 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
   const [isNewActivity, setIsNewActivity] = useState(false);
   const [formData, setFormData] = useState<Partial<Activity>>({});
 
-  const selectedDay = data.itinerary[selectedDayIndex];
+  // Manage Days Modal State
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [tempItinerary, setTempItinerary] = useState<DayItinerary[]>([]);
+
+  // Safety check: ensure itinerary exists and has at least one day
+  const safeItinerary = data.itinerary && data.itinerary.length > 0 ? data.itinerary : [{ date: new Date().toISOString().split('T')[0], dayLabel: 'Day 1', activities: [] }];
+  
+  // Adjust selected index if out of bounds
+  useEffect(() => {
+    if (selectedDayIndex >= safeItinerary.length) {
+        setSelectedDayIndex(0);
+    }
+  }, [safeItinerary.length, selectedDayIndex]);
+
+  const selectedDay = safeItinerary[selectedDayIndex] || safeItinerary[0];
 
   // Auto-scroll selected day into view
   useEffect(() => {
@@ -36,7 +50,7 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
   };
 
   const updateItinerary = (newActivities: Activity[]) => {
-    const newItinerary = [...data.itinerary];
+    const newItinerary = [...safeItinerary];
     newItinerary[selectedDayIndex] = { ...selectedDay, activities: newActivities };
     onUpdate(newItinerary);
   };
@@ -103,6 +117,53 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
     setShowModal(false);
   };
 
+  // --- Manage Days Logic ---
+  const handleManageOpen = () => {
+      setTempItinerary(JSON.parse(JSON.stringify(safeItinerary)));
+      setShowManageModal(true);
+  };
+
+  const handleDayChange = (index: number, field: keyof DayItinerary, value: string) => {
+      const newDays = [...tempItinerary];
+      // @ts-ignore - dynamic assignment
+      newDays[index] = { ...newDays[index], [field]: value };
+      setTempItinerary(newDays);
+  };
+
+  const handleAddDay = () => {
+      let nextDate = new Date();
+      if (tempItinerary.length > 0) {
+          const lastDate = new Date(tempItinerary[tempItinerary.length - 1].date);
+          lastDate.setDate(lastDate.getDate() + 1);
+          nextDate = lastDate;
+      }
+      
+      const newDay: DayItinerary = {
+          date: nextDate.toISOString().split('T')[0],
+          dayLabel: `Day ${tempItinerary.length + 1}`,
+          activities: []
+      };
+      setTempItinerary([...tempItinerary, newDay]);
+  };
+
+  const handleDeleteDay = (index: number) => {
+      if (tempItinerary.length <= 1) {
+          alert("至少需要保留一天行程");
+          return;
+      }
+      if (confirm(`確定要刪除 ${tempItinerary[index].dayLabel} 嗎？該日的所有行程也會被刪除。`)) {
+          const newDays = tempItinerary.filter((_, i) => i !== index);
+          setTempItinerary(newDays);
+      }
+  };
+
+  const saveManageDays = () => {
+      // Sort days by date
+      const sorted = [...tempItinerary].sort((a, b) => a.date.localeCompare(b.date));
+      onUpdate(sorted);
+      setShowManageModal(false);
+  };
+
   const isCurrentActivity = (time: string) => {
       const now = new Date();
       const dateStr = selectedDay.date; 
@@ -116,9 +177,9 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
       {/* Date Scroller */}
       <div className="bg-white/80 backdrop-blur-xl shadow-sm z-30 sticky top-0 border-b border-slate-200/50 pt-12">
         <div ref={scrollRef} className="flex overflow-x-auto no-scrollbar py-3 px-2 space-x-2 scroll-smooth">
-          {data.itinerary.map((day, idx) => (
+          {safeItinerary.map((day, idx) => (
             <button
-              key={day.date}
+              key={day.date + idx}
               onClick={() => setSelectedDayIndex(idx)}
               className={`flex-shrink-0 rounded-2xl px-4 py-2.5 flex flex-col items-center min-w-[72px] transition-all duration-300 relative overflow-hidden ${
                 selectedDayIndex === idx 
@@ -135,15 +196,24 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
         {/* Sub Header */}
         <div className="px-5 py-3 flex justify-between items-center bg-slate-50/80 text-xs text-gray-500 border-b border-slate-100">
             <span className="font-bold tracking-wide">
-                {selectedDay.date} 行程總覽 ({selectedDay.activities.length})
+                {selectedDay.date} 行程 ({selectedDay.activities.length})
             </span>
-            <button 
-                onClick={() => setEditMode(!editMode)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full transition-all ${editMode ? 'text-white bg-primary shadow-md shadow-primary/20' : 'bg-white border border-slate-200 hover:border-primary hover:text-primary'}`}
-            >
-                <Edit3 size={12} />
-                <span className="font-bold">{editMode ? '完成' : '編輯'}</span>
-            </button>
+            <div className="flex space-x-2">
+                <button 
+                    onClick={handleManageOpen}
+                    className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-slate-400 text-gray-600 transition-colors"
+                    title="管理天數"
+                >
+                    <Settings size={14} />
+                </button>
+                <button 
+                    onClick={() => setEditMode(!editMode)}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full transition-all ${editMode ? 'text-white bg-primary shadow-md shadow-primary/20' : 'bg-white border border-slate-200 hover:border-primary hover:text-primary'}`}
+                >
+                    <Edit3 size={12} />
+                    <span className="font-bold">{editMode ? '完成' : '編輯'}</span>
+                </button>
+            </div>
         </div>
       </div>
 
@@ -241,7 +311,7 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
         </div>
       </div>
 
-      {/* Edit/Add Modal (Reused) */}
+      {/* Edit/Add Activity Modal */}
       {showModal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
               <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -324,6 +394,72 @@ const Itinerary: React.FC<Props> = ({ data, onUpdate }) => {
                               儲存
                           </button>
                       </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Manage Days Modal */}
+      {showManageModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+              <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+                  <div className="bg-slate-800 px-6 py-4 flex justify-between items-center text-white shrink-0">
+                      <div className="flex items-center space-x-2">
+                        <Calendar size={18} />
+                        <h3 className="font-bold text-lg">行程天數管理</h3>
+                      </div>
+                      <button onClick={() => setShowManageModal(false)} className="p-1 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+                  </div>
+                  
+                  <div className="p-4 overflow-y-auto space-y-3 bg-slate-50 flex-1">
+                      {tempItinerary.map((day, idx) => (
+                          <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                              <div className="flex-1 space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                     <span className="text-xs font-bold text-gray-400 w-12">標籤</span>
+                                     <input 
+                                        type="text" 
+                                        value={day.dayLabel} 
+                                        onChange={(e) => handleDayChange(idx, 'dayLabel', e.target.value)}
+                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:border-primary outline-none"
+                                        placeholder="Day 1"
+                                     />
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                     <span className="text-xs font-bold text-gray-400 w-12">日期</span>
+                                     <input 
+                                        type="date" 
+                                        value={day.date} 
+                                        onChange={(e) => handleDayChange(idx, 'date', e.target.value)}
+                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:border-primary outline-none"
+                                     />
+                                  </div>
+                              </div>
+                              <button 
+                                onClick={() => handleDeleteDay(idx)}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="刪除此天"
+                              >
+                                  <Trash2 size={18} />
+                              </button>
+                          </div>
+                      ))}
+                      
+                      <button 
+                        onClick={handleAddDay}
+                        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 font-bold flex items-center justify-center hover:bg-gray-100 hover:border-gray-400 transition-colors"
+                      >
+                          <Plus size={16} className="mr-2" /> 新增一天
+                      </button>
+                  </div>
+
+                  <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+                      <button 
+                        onClick={saveManageDays}
+                        className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700 transition-colors shadow-lg"
+                      >
+                          儲存變更
+                      </button>
                   </div>
               </div>
           </div>
