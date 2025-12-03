@@ -1,7 +1,11 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { AppData, PrintMode } from '../types';
-import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, Smartphone, Car, Stamp } from 'lucide-react';
+import { 
+  CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, 
+  Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, 
+  Smartphone, Car, Stamp, Banknote, ArrowRightLeft, TrendingUp 
+} from 'lucide-react';
 
 interface Props {
   data: AppData;
@@ -25,6 +29,24 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
   
   // Weather States
   const [loadingWeather, setLoadingWeather] = useState(false);
+  const [weatherData, setWeatherData] = useState<WeatherItem[]>([]);
+
+  // Currency States
+  const [amount, setAmount] = useState<string>('10');
+  const [fromCurr, setFromCurr] = useState('SGD');
+  const [toCurr, setToCurr] = useState('TWD');
+  const [exchangeRate, setExchangeRate] = useState<number>(0);
+  const [loadingRate, setLoadingRate] = useState(false);
+  const [lastRateUpdate, setLastRateUpdate] = useState<string>('');
+
+  const currencies = [
+      { code: 'SGD', flag: '🇸🇬', name: '新加坡幣' },
+      { code: 'TWD', flag: '🇹🇼', name: '新台幣' },
+      { code: 'USD', flag: '🇺🇸', name: '美金' },
+      { code: 'JPY', flag: '🇯🇵', name: '日幣' },
+      { code: 'KRW', flag: '🇰🇷', name: '韓元' },
+      { code: 'CNY', flag: '🇨🇳', name: '人民幣' },
+  ];
   
   // Helper to generate dynamic placeholders based on TODAY
   const getSevenDayPlaceholder = () => {
@@ -47,12 +69,17 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
       return items;
   };
 
-  const [weatherData, setWeatherData] = useState<WeatherItem[]>(getSevenDayPlaceholder());
-
-  // Fetch weather automatically on mount
+  // Fetch data on mount
   useEffect(() => {
+      setWeatherData(getSevenDayPlaceholder());
       fetchWeather();
+      fetchExchangeRate();
   }, []);
+
+  // Re-fetch rate when currency changes
+  useEffect(() => {
+      fetchExchangeRate();
+  }, [fromCurr, toCurr]);
 
   const handleReset = () => {
     const pwd = prompt("請輸入重置密碼：");
@@ -188,6 +215,36 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
     }
   };
 
+  // Currency Logic
+  const fetchExchangeRate = async () => {
+      if (fromCurr === toCurr) {
+          setExchangeRate(1);
+          setLastRateUpdate(new Date().toLocaleTimeString());
+          return;
+      }
+      setLoadingRate(true);
+      try {
+          const res = await fetch(`https://open.er-api.com/v6/latest/${fromCurr}`);
+          const data = await res.json();
+          if (data && data.rates) {
+              setExchangeRate(data.rates[toCurr]);
+              setLastRateUpdate(new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+          }
+      } catch (err) {
+          console.error("Rate fetch failed", err);
+      } finally {
+          setLoadingRate(false);
+      }
+  };
+
+  const handleSwapCurrency = () => {
+      const temp = fromCurr;
+      setFromCurr(toCurr);
+      setToCurr(temp);
+  };
+
+  const calculatedValue = (parseFloat(amount || '0') * exchangeRate).toFixed(2);
+
   const mandaiMaps = [
       { name: '新加坡動物園', url: 'https://www.mandai.com/content/dam/mandai/singapore-zoo/park-map/sz-zh-map.pdf', color: 'bg-green-100 text-green-700' },
       { name: '夜間野生動物園', url: 'https://www.mandai.com/content/dam/mandai/night-safari/park-map/ns-zh-map.pdf', color: 'bg-indigo-100 text-indigo-700' },
@@ -264,6 +321,73 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                 </div>
             ))}
         </div>
+      </div>
+
+      {/* Currency Converter */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden p-4">
+          <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                  <Banknote className="text-green-600 mr-2" />
+                  <h3 className="font-bold text-gray-700">即時匯率換算</h3>
+              </div>
+              <button onClick={fetchExchangeRate} disabled={loadingRate} className="text-gray-400 hover:text-primary transition-colors">
+                  <RefreshCw size={16} className={loadingRate ? 'animate-spin' : ''} />
+              </button>
+          </div>
+          
+          <div className="flex items-center space-x-3 mb-4">
+              <div className="flex-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">持有貨幣</label>
+                  <div className="flex space-x-2">
+                      <select 
+                        value={fromCurr} 
+                        onChange={(e) => setFromCurr(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm font-bold text-gray-700 focus:outline-none focus:border-primary"
+                      >
+                          {currencies.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                      </select>
+                      <input 
+                        type="number" 
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-lg font-bold text-gray-800 focus:outline-none focus:border-primary"
+                        placeholder="0"
+                      />
+                  </div>
+              </div>
+          </div>
+
+          <div className="flex justify-center -my-2 relative z-10">
+              <button 
+                onClick={handleSwapCurrency}
+                className="bg-white border border-slate-200 p-1.5 rounded-full shadow-sm text-gray-500 hover:text-primary active:scale-95 transition-all"
+              >
+                  <ArrowRightLeft size={16} />
+              </button>
+          </div>
+
+          <div className="mt-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">換算結果</label>
+              <div className="flex items-center space-x-3 bg-slate-800 rounded-xl p-3 text-white">
+                   <select 
+                        value={toCurr} 
+                        onChange={(e) => setToCurr(e.target.value)}
+                        className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-sm font-bold text-white focus:outline-none [&>option]:text-black"
+                      >
+                          {currencies.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                   </select>
+                   <div className="flex-1 text-right">
+                       <span className="text-2xl font-black tracking-tight">{calculatedValue}</span>
+                   </div>
+              </div>
+              <div className="flex justify-between items-center mt-2">
+                  <div className="flex items-center text-[10px] text-gray-400">
+                      <TrendingUp size={12} className="mr-1" />
+                      1 {fromCurr} ≈ {exchangeRate?.toFixed(4)} {toCurr}
+                  </div>
+                  <span className="text-[10px] text-gray-400">更新: {lastRateUpdate || '載入中...'}</span>
+              </div>
+          </div>
       </div>
 
       {/* Useful Apps Section */}
