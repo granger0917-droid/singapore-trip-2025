@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { AppData, PrintMode } from '../types';
 import { 
@@ -21,6 +20,17 @@ interface WeatherItem {
   condition: string;
   color: string;
   icon: React.ReactNode;
+}
+
+interface UsefulApp {
+  name: string;
+  desc: string;
+  deepLink?: string;
+  iosStoreUrl?: string;
+  androidStoreUrl?: string;
+  webUrl?: string;
+  icon: React.ReactNode;
+  bg: string;
 }
 
 const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
@@ -157,6 +167,48 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
     window.open(url, '_blank');
   };
 
+  const openApp = (app: UsefulApp) => {
+    // SSR 防護：若沒有 navigator，退回 web
+    if (typeof navigator === 'undefined') {
+      if (app.webUrl) {
+        window.open(app.webUrl, '_blank');
+      }
+      return;
+    }
+
+    const ua = navigator.userAgent || '';
+    const isIOS = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+
+    // 1. 若有 deepLink，先嘗試打開 App
+    if (app.deepLink) {
+      window.location.href = app.deepLink;
+
+      // fallback：deep link 失敗時，帶去商店 / 網站
+      setTimeout(() => {
+        if (isIOS && app.iosStoreUrl) {
+          window.location.href = app.iosStoreUrl;
+        } else if (isAndroid && app.androidStoreUrl) {
+          window.location.href = app.androidStoreUrl;
+        } else if (app.webUrl) {
+          window.open(app.webUrl, '_blank');
+        }
+      }, 1500);
+
+      return;
+    }
+
+    // 2. 沒有 deepLink，直接導到商店
+    if (isIOS && app.iosStoreUrl) {
+      window.location.href = app.iosStoreUrl;
+    } else if (isAndroid && app.androidStoreUrl) {
+      window.location.href = app.androidStoreUrl;
+    } else if (app.webUrl) {
+      // 3. 最後才退到 web
+      window.open(app.webUrl, '_blank');
+    }
+  };
+
   // Weather Logic
   const fetchWeather = async () => {
     setLoadingWeather(true);
@@ -253,32 +305,44 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
       { name: '亞洲雨林探險園', url: 'https://www.mandai.com/content/dam/mandai/rainforest-wild-asia/park-map/rfw-asia-zh-map.pdf', color: 'bg-lime-100 text-lime-800' },
   ];
 
-  const usefulApps = [
+  const usefulApps: UsefulApp[] = [
       { 
           name: 'Grab', 
-          desc: '叫車與外送', 
-          url: 'https://www.grab.com/sg/download/', 
+          desc: '叫車與外送',
+          deepLink: '', // 若日後找到官方 deep link，可填在這裡
+          iosStoreUrl: 'https://apps.apple.com/sg/app/grab-superapp/id647268330',
+          androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.grabtaxi.passenger',
+          webUrl: 'https://www.grab.com/sg/download/',
           icon: <Car size={20} className="text-green-600" />,
           bg: 'bg-green-50'
       },
       { 
           name: 'Mandai', 
-          desc: '動物園官方 App', 
-          url: 'https://www.mandai.com/en/mandai-app.html', 
+          desc: '動物園官方 App',
+          deepLink: '',
+          iosStoreUrl: 'https://apps.apple.com/sg/app/mandai-app/id6470993928',
+          androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.mandai.mandaiapp',
+          webUrl: 'https://www.mandai.com/en/mandai-app.html',
           icon: <Map size={20} className="text-lime-600" />,
           bg: 'bg-lime-50'
       },
       { 
           name: 'MyICA', 
-          desc: '入境卡申報', 
-          url: 'https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card', 
+          desc: '入境卡申報',
+          deepLink: '',
+          iosStoreUrl: 'https://apps.apple.com/sg/app/myica-mobile/id1463678327',
+          androidStoreUrl: 'https://play.google.com/store/apps/details?id=sg.gov.ica.myica',
+          webUrl: 'https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card', 
           icon: <Stamp size={20} className="text-red-600" />,
           bg: 'bg-red-50'
       },
       { 
           name: 'Changi', 
-          desc: '樟宜機場', 
-          url: 'https://www.changiairport.com/en/download-app.html', 
+          desc: '樟宜機場',
+          deepLink: '',
+          iosStoreUrl: 'https://apps.apple.com/sg/app/i-changi/id552403495',
+          androidStoreUrl: 'https://play.google.com/store/apps/details?id=com.changiairport.cagapp',
+          webUrl: 'https://www.changiairport.com/en/download-app.html', 
           icon: <Plane size={20} className="text-purple-600" />,
           bg: 'bg-purple-50'
       }
@@ -400,7 +464,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
               {usefulApps.map((app, idx) => (
                   <button 
                     key={idx}
-                    onClick={() => openUrl(app.url)}
+                    onClick={() => openApp(app)}
                     className="flex items-center p-3 rounded-xl border border-slate-100 hover:border-slate-300 transition-all active:scale-95 text-left bg-slate-50 hover:bg-white"
                   >
                       <div className={`p-2 rounded-lg mr-3 shrink-0 ${app.bg}`}>
