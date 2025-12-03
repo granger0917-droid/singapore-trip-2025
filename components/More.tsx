@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { AppData, PrintMode } from '../types';
-import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, Smartphone, ExternalLink } from 'lucide-react';
+import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, Smartphone, ExternalLink, Car, Stamp } from 'lucide-react';
 
 interface Props {
   data: AppData;
@@ -202,6 +202,37 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
       { name: '亞洲雨林探險園', url: 'https://www.mandai.com/content/dam/mandai/rainforest-wild-asia/park-map/rfw-asia-zh-map.pdf', color: 'bg-lime-100 text-lime-800' },
   ];
 
+  const usefulApps = [
+      { 
+          name: 'Grab', 
+          desc: '叫車與外送', 
+          url: 'https://www.grab.com/sg/download/', // Universal Link
+          icon: <Car size={20} className="text-green-600" />,
+          bg: 'bg-green-50'
+      },
+      { 
+          name: 'Mandai', 
+          desc: '動物園官方 App', 
+          url: 'https://www.mandai.com/en/mandai-app.html', 
+          icon: <Map size={20} className="text-lime-600" />,
+          bg: 'bg-lime-50'
+      },
+      { 
+          name: 'MyICA', 
+          desc: '入境卡申報', 
+          url: 'https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card', 
+          icon: <Stamp size={20} className="text-red-600" />,
+          bg: 'bg-red-50'
+      },
+      { 
+          name: 'Changi', 
+          desc: '樟宜機場', 
+          url: 'https://www.changiairport.com/en/download-app.html', 
+          icon: <Plane size={20} className="text-purple-600" />,
+          bg: 'bg-purple-50'
+      }
+  ];
+
   return (
     <div className="px-4 pt-14 pb-40 space-y-4 overflow-y-auto h-full bg-slate-50">
       <h2 className="text-xl font-bold text-gray-800 mb-4">更多功能</h2>
@@ -241,14 +272,39 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
         </div>
       </div>
 
-      {/* Mandai Maps & App Section */}
+      {/* Useful Apps Section */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+          <div className="flex items-center mb-3">
+              <Smartphone className="text-slate-700 mr-2" />
+              <h3 className="font-bold text-gray-700">新加坡必備 APP</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+              {usefulApps.map((app, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => openUrl(app.url)}
+                    className="flex items-center p-3 rounded-xl border border-slate-100 hover:border-slate-300 transition-all active:scale-95 text-left bg-slate-50 hover:bg-white"
+                  >
+                      <div className={`p-2 rounded-lg mr-3 shrink-0 ${app.bg}`}>
+                          {app.icon}
+                      </div>
+                      <div className="overflow-hidden">
+                          <p className="font-bold text-sm text-gray-800 leading-tight">{app.name}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{app.desc}</p>
+                      </div>
+                  </button>
+              ))}
+          </div>
+      </div>
+
+      {/* Mandai Maps Section */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
         <div className="flex items-center mb-3">
              <Map className="text-green-600 mr-2" />
-             <h3 className="font-bold text-gray-700">萬態野生動物保護區</h3>
+             <h3 className="font-bold text-gray-700">萬態園區地圖</h3>
         </div>
         
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-2 gap-3">
             {mandaiMaps.map((map, idx) => (
                 <button 
                     key={idx}
@@ -260,15 +316,6 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                 </button>
             ))}
         </div>
-
-        <button 
-            onClick={() => openUrl('https://www.mandai.com/en/mandai-app.html')}
-            className="w-full bg-slate-800 text-white p-3 rounded-xl shadow-md shadow-slate-200 flex items-center justify-center hover:bg-slate-700 active:scale-[0.98] transition-all"
-        >
-            <Smartphone size={18} className="mr-2" />
-            <span className="font-bold text-sm">下載 Mandai App (官方)</span>
-            <ExternalLink size={14} className="ml-2 opacity-50" />
-        </button>
       </div>
 
       {/* Copy Text */}
