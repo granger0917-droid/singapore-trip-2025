@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tab, PrintMode, TicketCategory } from './types';
 import { useAppData } from './hooks/useAppData';
@@ -13,7 +14,7 @@ const App: React.FC = () => {
   const [selectedTicketCategory, setSelectedTicketCategory] = useState<TicketCategory | 'ALL'>('ALL');
   const [printMode, setPrintMode] = useState<PrintMode>(PrintMode.All);
   
-  const { data, updateItinerary, addTicket, updateTicket, removeTicket, resetData, importData } = useAppData();
+  const { data, updateItinerary, updateFlights, addTicket, updateTicket, removeTicket, resetData, importData } = useAppData();
 
   const handleTabChange = (tab: Tab, category?: TicketCategory | 'ALL') => {
     setActiveTab(tab);
@@ -32,7 +33,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case Tab.Overview:
-        return <Overview data={data} onChangeTab={handleTabChange} />;
+        return <Overview data={data} onChangeTab={handleTabChange} onUpdateFlights={updateFlights} />;
       case Tab.Itinerary:
         return <Itinerary data={data} onUpdate={updateItinerary} />;
       case Tab.Tickets:
@@ -49,7 +50,7 @@ const App: React.FC = () => {
       case Tab.More:
         return <More data={data} onReset={resetData} onImport={importData} onPrint={handlePrint} />;
       default:
-        return <Overview data={data} onChangeTab={handleTabChange} />;
+        return <Overview data={data} onChangeTab={handleTabChange} onUpdateFlights={updateFlights} />;
     }
   };
 
