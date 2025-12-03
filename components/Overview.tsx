@@ -1,17 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
-import { AppData, Activity, Tab, TicketCategory } from '../types';
-import { Plane, Calendar, AlertCircle, Hotel, MapPin, Phone, Navigation, Star } from 'lucide-react';
+import { AppData, Activity, Tab, TicketCategory, FlightSegment } from '../types';
+import { Plane, Calendar, AlertCircle, Hotel, MapPin, Phone, Navigation, Star, Edit2, X, Save } from 'lucide-react';
 
 interface Props {
   data: AppData;
   onChangeTab: (tab: Tab, category?: TicketCategory | 'ALL') => void;
+  onUpdateFlights: (type: 'outbound' | 'inbound', segment: FlightSegment) => void;
 }
 
-const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
+const Overview: React.FC<Props> = ({ data, onChangeTab, onUpdateFlights }) => {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, started: false });
   const [nextActivity, setNextActivity] = useState<Activity | null>(null);
   const [flightView, setFlightView] = useState<'outbound' | 'inbound'>('outbound');
   
+  // Edit Flight Modal State
+  const [showFlightModal, setShowFlightModal] = useState(false);
+  const [editingFlightType, setEditingFlightType] = useState<'outbound' | 'inbound'>('outbound');
+  const [flightFormData, setFlightFormData] = useState<FlightSegment>({
+      airline: '', code: '', date: '', time: '', origin: '', destination: '', terminal: ''
+  });
+
   // Countdown Logic
   useEffect(() => {
     const timer = setInterval(() => {
@@ -63,10 +72,29 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
   const isToday = !!currentDayItinerary;
 
   const currentFlight = flightView === 'outbound' ? data.flights.outbound : data.flights.inbound;
-  const origin = flightView === 'outbound' ? 'TPE' : 'SIN';
-  const destination = flightView === 'outbound' ? 'SIN' : 'TPE';
-  const originName = flightView === 'outbound' ? 'TAIPEI' : 'SINGAPORE';
-  const destName = flightView === 'outbound' ? 'SINGAPORE' : 'TAIPEI';
+  
+  // Helpers for Edit Modal
+  const openFlightEdit = () => {
+      setEditingFlightType('outbound');
+      setFlightFormData({ ...data.flights.outbound });
+      setShowFlightModal(true);
+  };
+
+  const handleFlightTypeChangeInModal = (type: 'outbound' | 'inbound') => {
+      setEditingFlightType(type);
+      setFlightFormData({ ...data.flights[type] });
+  };
+
+  const handleFlightSave = () => {
+      onUpdateFlights(editingFlightType, flightFormData);
+      // If we saved, we stay in modal but might want to switch tabs or close? 
+      // Let's just update and keep editing or provide visual feedback.
+      // For simplicity, we just update. User can close modal or switch tabs.
+      
+      // Auto switch view to what we just edited so user sees changes immediately upon close
+      setFlightView(editingFlightType);
+      setShowFlightModal(false); 
+  };
 
   return (
     <div className="bg-slate-50 h-full flex flex-col">
@@ -131,7 +159,7 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
                          </div>
                          <h3 className="text-xl font-bold text-gray-800 leading-tight mb-2 pr-8">{nextActivity.title}</h3>
                          <div className="flex items-center text-sm text-gray-500">
-                             <MapPin size={14} className="mr-1.5 text-secondary" />
+                             <MapPin size={14} className="mr-1.5 text-secondary shrink-0" />
                              <span className="line-clamp-1">{nextActivity.location || '已安排行程'}</span>
                          </div>
                          <div className="mt-4 flex space-x-2">
@@ -181,20 +209,30 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-300">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative transition-all duration-300 group">
+                {/* Edit Button */}
+                <button 
+                    onClick={openFlightEdit}
+                    className="absolute top-3 right-3 p-2 bg-white/80 hover:bg-white rounded-full text-gray-400 hover:text-primary z-30 transition-colors shadow-sm border border-slate-100"
+                >
+                    <Edit2 size={14} />
+                </button>
+
                 {/* Top Part */}
                 <div className="p-5 pb-8 relative z-10">
                     <div className="flex justify-between items-center mb-6">
                          <div className="flex items-center space-x-2">
-                             <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-xs">JX</div>
-                             <span className="font-bold text-slate-700">STARLUX</span>
+                             <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-[10px] uppercase">
+                                {currentFlight.code.slice(0, 2) || 'FL'}
+                             </div>
+                             <span className="font-bold text-slate-700">{currentFlight.airline || 'AIRLINE'}</span>
                          </div>
                          <span className="text-xs font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded">ECONOMY</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <div>
-                            <p className="text-4xl font-black text-slate-800">{origin}</p>
-                            <p className="text-xs text-gray-400 font-bold mt-1">{originName}</p>
+                            <p className="text-4xl font-black text-slate-800">{currentFlight.origin}</p>
+                            <p className="text-xs text-gray-400 font-bold mt-1 uppercase">Origin</p>
                         </div>
                         <div className="flex flex-col items-center px-4 w-full">
                             <Plane size={20} className={`text-primary mb-1 transition-transform duration-500 ${flightView === 'inbound' ? '-scale-x-100' : ''}`} />
@@ -204,8 +242,8 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
                             <p className="text-[10px] text-gray-400 mt-1 font-mono">{currentFlight.time.replace(':','')}H</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-4xl font-black text-slate-800">{destination}</p>
-                            <p className="text-xs text-gray-400 font-bold mt-1">{destName}</p>
+                            <p className="text-4xl font-black text-slate-800">{currentFlight.destination}</p>
+                            <p className="text-xs text-gray-400 font-bold mt-1 uppercase">Dest</p>
                         </div>
                     </div>
                 </div>
@@ -308,6 +346,120 @@ const Overview: React.FC<Props> = ({ data, onChangeTab }) => {
            </div>
         )}
       </div>
+
+      {/* Edit Flight Modal */}
+      {showFlightModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+              <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+                  <div className="bg-[#98694c] px-6 py-4 flex justify-between items-center text-white shrink-0">
+                      <h3 className="font-bold text-lg">編輯航班資訊</h3>
+                      <button onClick={() => setShowFlightModal(false)} className="p-1 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+                  </div>
+                  
+                  {/* Tabs */}
+                  <div className="flex p-1 bg-slate-100 m-4 rounded-xl shrink-0">
+                      <button 
+                        onClick={() => handleFlightTypeChangeInModal('outbound')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${editingFlightType === 'outbound' ? 'bg-white text-primary shadow-sm' : 'text-gray-400'}`}
+                      >
+                          去程 (Outbound)
+                      </button>
+                      <button 
+                        onClick={() => handleFlightTypeChangeInModal('inbound')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${editingFlightType === 'inbound' ? 'bg-white text-primary shadow-sm' : 'text-gray-400'}`}
+                      >
+                          回程 (Inbound)
+                      </button>
+                  </div>
+
+                  <div className="px-6 pb-6 overflow-y-auto space-y-4">
+                       <div>
+                          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">航空公司 (Airline)</label>
+                          <input 
+                            type="text" 
+                            value={flightFormData.airline}
+                            onChange={e => setFlightFormData({...flightFormData, airline: e.target.value})}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          />
+                       </div>
+                       
+                       <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">班機代號</label>
+                              <input 
+                                type="text" 
+                                value={flightFormData.code}
+                                onChange={e => setFlightFormData({...flightFormData, code: e.target.value})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                              />
+                           </div>
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">航廈</label>
+                              <input 
+                                type="text" 
+                                value={flightFormData.terminal}
+                                onChange={e => setFlightFormData({...flightFormData, terminal: e.target.value})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                              />
+                           </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">出發地 (Code)</label>
+                              <input 
+                                type="text" 
+                                value={flightFormData.origin}
+                                onChange={e => setFlightFormData({...flightFormData, origin: e.target.value.toUpperCase()})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                                placeholder="TPE"
+                              />
+                           </div>
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">目的地 (Code)</label>
+                              <input 
+                                type="text" 
+                                value={flightFormData.destination}
+                                onChange={e => setFlightFormData({...flightFormData, destination: e.target.value.toUpperCase()})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                                placeholder="SIN"
+                              />
+                           </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">日期</label>
+                              <input 
+                                type="date" 
+                                value={flightFormData.date}
+                                onChange={e => setFlightFormData({...flightFormData, date: e.target.value})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                              />
+                           </div>
+                           <div>
+                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">時間</label>
+                              <input 
+                                type="time" 
+                                value={flightFormData.time}
+                                onChange={e => setFlightFormData({...flightFormData, time: e.target.value})}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-gray-800 focus:outline-none focus:border-primary"
+                              />
+                           </div>
+                       </div>
+
+                       <button 
+                         onClick={handleFlightSave}
+                         className="w-full mt-4 py-3.5 text-white font-bold bg-[#98694c] rounded-xl hover:bg-[#86593f] transition-colors flex items-center justify-center shadow-lg shadow-[#98694c]/30"
+                       >
+                           <Save size={18} className="mr-2" />
+                           儲存變更
+                       </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 };
