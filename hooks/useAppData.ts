@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
-import { AppData, DayItinerary, Ticket } from '../types';
+import { AppData, DayItinerary, Ticket, FlightSegment } from '../types';
 import { INITIAL_DATA } from '../constants';
 
 // 升級 Key 版本，確保舊的快取不會影響新邏輯
-const STORAGE_KEY = 'sg_trip_2025_v5';
+const STORAGE_KEY = 'sg_trip_2025_v7_flights';
 const DB_NAME = 'sg_trip_db';
 const STORE_NAME = 'files';
 
@@ -80,6 +81,15 @@ export const useAppData = () => {
         try {
           const parsed = JSON.parse(savedJSON);
           if (parsed.itinerary && parsed.flights) {
+            // Migration for old data without airline/origin/dest
+            if (!parsed.flights.outbound.airline) parsed.flights.outbound.airline = 'STARLUX';
+            if (!parsed.flights.outbound.origin) parsed.flights.outbound.origin = 'TPE';
+            if (!parsed.flights.outbound.destination) parsed.flights.outbound.destination = 'SIN';
+            
+            if (!parsed.flights.inbound.airline) parsed.flights.inbound.airline = 'STARLUX';
+            if (!parsed.flights.inbound.origin) parsed.flights.inbound.origin = 'SIN';
+            if (!parsed.flights.inbound.destination) parsed.flights.inbound.destination = 'TPE';
+
             localData = parsed;
           }
         } catch (e) {
@@ -88,7 +98,6 @@ export const useAppData = () => {
       }
 
       // Rehydrate tickets from DB
-      // 檢查是否有票券資料是空的 (因為 LocalStorage 現在只存 metadata)
       if (localData.tickets.length > 0) {
         const fullTickets = await Promise.all(
           localData.tickets.map(async (t) => {
@@ -133,11 +142,19 @@ export const useAppData = () => {
     setData(prev => ({ ...prev, itinerary: newItinerary }));
   };
 
+  const updateFlights = (type: 'outbound' | 'inbound', segment: FlightSegment) => {
+      setData(prev => ({
+          ...prev,
+          flights: {
+              ...prev.flights,
+              [type]: segment
+          }
+      }));
+  };
+
   const addTicket = async (ticket: Ticket) => {
-    // 1. Save heavy file to DB
     try {
         await dbPut(ticket.id, ticket.data);
-        // 2. Update State (Keep full data in memory for UI display)
         setData(prev => ({ ...prev, tickets: [...prev.tickets, ticket] }));
     } catch (e) {
         alert("儲存失敗：資料庫錯誤或空間不足");
@@ -146,7 +163,6 @@ export const useAppData = () => {
   };
 
   const updateTicket = async (updatedTicket: Ticket) => {
-    // Only update DB if data content changed (e.g. re-upload, though currently UI only supports text edit)
     if (updatedTicket.data && updatedTicket.data.length > 100) {
         await dbPut(updatedTicket.id, updatedTicket.data);
     }
@@ -169,7 +185,6 @@ export const useAppData = () => {
   };
   
   const importData = async (newData: AppData) => {
-    // Import Logic: Clear old DB, save new files to DB
     await dbClear();
     if (newData.tickets) {
         for (const t of newData.tickets) {
@@ -179,5 +194,5 @@ export const useAppData = () => {
     setData(newData);
   };
 
-  return { data, updateItinerary, addTicket, updateTicket, removeTicket, resetData, importData };
+  return { data, updateItinerary, updateFlights, addTicket, updateTicket, removeTicket, resetData, importData };
 };
