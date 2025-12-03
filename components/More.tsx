@@ -1,6 +1,6 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { AppData, PrintMode } from '../types';
-// 確認這裡有包含 Car, Stamp, Smartphone, Map 等所有用到的圖示
 import { CloudRain, Map, Printer, Database, Trash2, Download, Upload, Copy, Check, Plane, FileText, Layers, CloudLightning, Cloud, Sun, RefreshCw, Loader2, Smartphone, ExternalLink, Car, Stamp } from 'lucide-react';
 
 interface Props {
@@ -134,12 +134,14 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
   const fetchWeather = async () => {
     setLoadingWeather(true);
     try {
+        // Fetch Singapore (1.3521, 103.8198) weather from Open-Meteo
         const response = await fetch(
             'https://api.open-meteo.com/v1/forecast?latitude=1.3521&longitude=103.8198&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FSingapore'
         );
         const jsonData = await response.json();
         
         if (jsonData.daily) {
+            // Get next 7 days
             const newForecast: WeatherItem[] = jsonData.daily.time.slice(0, 7).map((dateStr: string, index: number) => {
                 const dateObj = new Date(dateStr);
                 const month = dateObj.getMonth() + 1;
@@ -149,6 +151,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                 const max = Math.round(jsonData.daily.temperature_2m_max[index]);
                 const min = Math.round(jsonData.daily.temperature_2m_min[index]);
 
+                // Map WMO codes to UI
                 let condition = '多雲';
                 let icon = <Cloud size={24} />;
                 let color = 'text-gray-500';
@@ -167,6 +170,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
                     color = 'text-blue-600';
                 }
 
+                // Check if it is today
                 const today = new Date();
                 const isToday = dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth();
 
@@ -183,6 +187,8 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
         }
     } catch (error) {
         console.error("Weather fetch failed", error);
+        // Do not alert on auto-fetch to avoid annoying popups
+        // alert("天氣更新失敗，請檢查網路連線");
     } finally {
         setLoadingWeather(false);
     }
@@ -200,7 +206,7 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
       { 
           name: 'Grab', 
           desc: '叫車與外送', 
-          url: 'https://www.grab.com/sg/download/', 
+          url: 'https://www.grab.com/sg/download/', // Universal Link
           icon: <Car size={20} className="text-green-600" />,
           bg: 'bg-green-50'
       },
@@ -424,6 +430,3 @@ const More: React.FC<Props> = ({ data, onReset, onImport, onPrint }) => {
 };
 
 export default More;
-]]></content>
-  </change>
-</changes>
