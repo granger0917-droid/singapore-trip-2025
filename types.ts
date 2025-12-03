@@ -1,3 +1,4 @@
+
 export enum Tab {
   Overview = 'overview',
   Itinerary = 'itinerary',
@@ -44,10 +45,12 @@ export interface Ticket {
 }
 
 export interface FlightSegment {
+  airline: string;    // New: STARLUX
   code: string;       // JX771
   date: string;       // 2025-11-27
   time: string;       // 08:25
-  airport: string;    // TPE -> SIN
+  origin: string;     // New: TPE
+  destination: string;// New: SIN
   terminal: string;   // T2
 }
 
